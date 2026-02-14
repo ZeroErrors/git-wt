@@ -13,10 +13,27 @@ dotnet tool install -g git-wt
 ## Usage
 
 ```
+git wt --setup <url>    Clone a repo into a bare worktree layout
 git wt <branch-name>    Create a worktree for the given branch
 git wt --list           List all worktrees as a tree
 git wt --prune          Remove worktrees whose upstream is gone
 ```
+
+### Set up a new repository
+
+```
+git wt --setup git@github.com:user/my-project.git
+```
+
+Clones the repository into a bare worktree layout, ready for use with `git wt`:
+
+```
+my-project/
+├── .bare/       (bare git repository)
+└── main/        (worktree for the default branch)
+```
+
+This is a drop-in replacement for `git clone` that produces a worktree-based structure. All remote branches are fetched and the default branch (e.g. `main` or `master`) is checked out as the first worktree. Works with both SSH and HTTPS URLs.
 
 ### Create a worktree
 
