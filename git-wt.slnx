@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/git-wt/git-wt.csproj" />
+  <Project Path="tests/git-wt.Tests/git-wt.Tests.csproj" />
+</Solution>

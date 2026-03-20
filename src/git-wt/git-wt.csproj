@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>git-wt</ToolCommandName>
+    <PackageId>git-wt</PackageId>
+    <Version>0.0.0-local</Version>
+    <Description>CLI tool for managing bare repo worktree setups with automatic remote branch tracking</Description>
+    <Authors>ZeroErrors</Authors>
+    <RepositoryUrl>https://github.com/ZeroErrors/git-wt</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <ProjectUrl>https://github.com/ZeroErrors/git-wt</ProjectUrl>
+    <LicenseExpression>MIT</LicenseExpression>
+    <PackageTags>git;worktree;cli;dotnet-tool</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="git-wt.Tests" />
+  </ItemGroup>
+</Project>

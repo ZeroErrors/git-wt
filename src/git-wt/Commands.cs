@@ -295,7 +295,7 @@ static class Commands
     /// suffix and taking the last path segment.
     /// Works with HTTPS, SSH, and local file paths.
     /// </summary>
-    static string? DeriveRepoName(string url)
+    internal static string? DeriveRepoName(string url)
     {
         var name = url.TrimEnd('/');
         if (name.EndsWith(".git", StringComparison.OrdinalIgnoreCase))

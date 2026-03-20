@@ -2,5 +2,5 @@
 dotnet tool uninstall -g git-wt 2>$null
 
 # Pack and install
-dotnet pack
-dotnet tool install -g --add-source ./nupkg git-wt
+dotnet pack src/git-wt -o ./artifacts
+dotnet tool install -g --add-source ./artifacts git-wt

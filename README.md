@@ -1,5 +1,8 @@
 # git-wt
 
+[![CI](https://github.com/ZeroErrors/git-wt/actions/workflows/ci.yml/badge.svg)](https://github.com/ZeroErrors/git-wt/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/git-wt)](https://www.nuget.org/packages/git-wt)
+
 A CLI tool for managing [bare repo worktree](https://git-scm.com/docs/git-worktree) setups. Creates worktrees with automatic remote branch tracking, lists them as a hierarchical tree, and prunes stale ones.
 
 ## Install
@@ -42,9 +45,9 @@ git wt feat/my-feature
 ```
 
 Automatically detects whether the branch exists locally, on the remote, or needs to be created:
-- **Local branch exists** — checks it out in a new worktree
-- **Remote branch exists** — creates a local branch tracking the remote
-- **Neither** — creates a new branch from the default branch
+- **Local branch exists**:checks it out in a new worktree
+- **Remote branch exists**:creates a local branch tracking the remote
+- **Neither**:creates a new branch from the default branch
 
 ### List worktrees
 
@@ -74,7 +77,3 @@ git wt --prune
 ```
 
 Fetches from origin, then removes worktrees whose upstream branch has been deleted. Safely skips worktrees with dirty or untracked changes. Cleans up empty parent directories after removal.
-
-## License
-
-[MIT](LICENSE)
