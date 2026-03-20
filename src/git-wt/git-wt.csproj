@@ -10,7 +10,7 @@
     <RepositoryUrl>https://github.com/ZeroErrors/git-wt</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <ProjectUrl>https://github.com/ZeroErrors/git-wt</ProjectUrl>
-    <LicenseExpression>MIT</LicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>git;worktree;cli;dotnet-tool</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageOutputPath>./nupkg</PackageOutputPath>
