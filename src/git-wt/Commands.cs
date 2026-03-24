@@ -121,9 +121,12 @@ static class Commands
         Console.WriteLine($"Creating worktree for '{defaultBranch}'...");
 
         int wtExit;
+        var localBranchExists = Git.Run(bareDir, "rev-parse", "--verify", $"refs/heads/{defaultBranch}").ExitCode == 0;
         using (new RelativeWorktreeScope(bareDir))
         {
-            wtExit = Git.RunLive(bareDir, "worktree", "add", "--track", "-b", defaultBranch, worktreePath, $"origin/{defaultBranch}");
+            wtExit = localBranchExists
+                ? Git.RunLive(bareDir, "worktree", "add", worktreePath, defaultBranch)
+                : Git.RunLive(bareDir, "worktree", "add", "--track", "-b", defaultBranch, worktreePath, $"origin/{defaultBranch}");
         }
 
         if (wtExit != 0)

@@ -119,12 +119,19 @@ static class Git
 sealed class RelativeWorktreeScope : IDisposable
 {
     readonly string _gitDir;
+    readonly string? _previousRepoVersion;
     readonly bool _relExtWasEnabled;
     readonly bool _relPathWasEnabled;
 
     public RelativeWorktreeScope(string gitDir)
     {
         _gitDir = gitDir;
+
+        // extensions.relativeWorktrees requires repositoryformatversion = 1.
+        var (verExit, verOutput, _) = Git.Run(gitDir, "config", "--get", "core.repositoryformatversion");
+        _previousRepoVersion = verExit == 0 ? verOutput.Trim() : null;
+        if (_previousRepoVersion != "1")
+            Git.Run(gitDir, "config", "core.repositoryformatversion", "1");
 
         var (relExtExit, relExtOutput, _) = Git.Run(gitDir, "config", "--get", "extensions.relativeWorktrees");
         _relExtWasEnabled = relExtExit == 0 && relExtOutput.Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
@@ -144,5 +151,13 @@ sealed class RelativeWorktreeScope : IDisposable
             Git.Run(_gitDir, "config", "--unset", "extensions.relativeWorktrees");
         if (!_relPathWasEnabled)
             Git.Run(_gitDir, "config", "--unset", "worktree.useRelativePaths");
+
+        if (_previousRepoVersion != "1")
+        {
+            if (_previousRepoVersion is not null)
+                Git.Run(_gitDir, "config", "core.repositoryformatversion", _previousRepoVersion);
+            else
+                Git.Run(_gitDir, "config", "--unset", "core.repositoryformatversion");
+        }
     }
 }
