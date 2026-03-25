@@ -41,6 +41,9 @@ static class Commands
             {
                 Console.WriteLine($"Using existing branch '{branchName}'...");
                 exitCode = Git.RunLive(bareRepoPath, "worktree", "add", worktreePath, branchName);
+
+                if (exitCode == 0 && remoteBranchExists)
+                    Git.Run(bareRepoPath, "branch", $"--set-upstream-to=origin/{branchName}", branchName);
             }
             else if (remoteBranchExists)
             {
