@@ -5,7 +5,44 @@ on:
     tags: ['v*']
 
 jobs:
+  build-native:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: git-wt-linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+            artifact: git-wt-osx-arm64
+          - os: windows-latest
+            rid: win-x64
+            artifact: git-wt-win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Set version from tag
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+      - name: Publish native AOT
+        run: >
+          dotnet publish src/git-wt/git-wt.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -p:Version=${{ env.VERSION }}
+          -p:PublishAot=true
+          -o ./publish
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ./publish/git-wt*
+
   release:
+    needs: build-native
     runs-on: ubuntu-latest
     environment: nuget
     permissions:
@@ -23,8 +60,19 @@ jobs:
       - run: dotnet pack --no-build -c Release -p:Version=${{ env.VERSION }} -o ./artifacts
       - name: Push to NuGet
         run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      - name: Download native binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./native
+      - name: Package native binaries
+        run: |
+          cd native
+          for dir in */; do
+            name="${dir%/}"
+            tar -czf "../artifacts/${name}.tar.gz" -C "$dir" .
+          done
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*.nupkg
+          files: artifacts/*
           generate_release_notes: true
