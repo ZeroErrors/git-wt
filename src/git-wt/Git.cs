@@ -111,53 +111,21 @@ static class Git
 }
 
 /// <summary>
-/// Temporarily enables <c>extensions.relativeWorktrees</c> and <c>worktree.useRelativePaths</c>
-/// for the duration of a <c>using</c> block, restoring the previous values on dispose.
-/// This ensures worktree gitdir/commondir links use relative paths, making the
-/// repo directory relocatable.
+/// Ensures the repo is configured for relative worktree paths by upgrading to
+/// <c>repositoryformatversion = 1</c> and enabling <c>extensions.relativeWorktrees</c>.
+/// These settings are permanent — once any worktree has been created with relative paths,
+/// git requires them to be present or it will refuse to operate on the repo.
 /// </summary>
-sealed class RelativeWorktreeScope : IDisposable
+static class RelativeWorktrees
 {
-    readonly string _gitDir;
-    readonly string? _previousRepoVersion;
-    readonly bool _relExtWasEnabled;
-    readonly bool _relPathWasEnabled;
-
-    public RelativeWorktreeScope(string gitDir)
+    public static void EnsureEnabled(string gitDir)
     {
-        _gitDir = gitDir;
-
-        // extensions.relativeWorktrees requires repositoryformatversion = 1.
         var (verExit, verOutput, _) = Git.Run(gitDir, "config", "--get", "core.repositoryformatversion");
-        _previousRepoVersion = verExit == 0 ? verOutput.Trim() : null;
-        if (_previousRepoVersion != "1")
+        if (verExit != 0 || verOutput.Trim() != "1")
             Git.Run(gitDir, "config", "core.repositoryformatversion", "1");
 
-        var (relExtExit, relExtOutput, _) = Git.Run(gitDir, "config", "--get", "extensions.relativeWorktrees");
-        _relExtWasEnabled = relExtExit == 0 && relExtOutput.Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
-
-        var (relPathExit, relPathOutput, _) = Git.Run(gitDir, "config", "--get", "worktree.useRelativePaths");
-        _relPathWasEnabled = relPathExit == 0 && relPathOutput.Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
-
-        if (!_relExtWasEnabled)
+        var (extExit, extOutput, _) = Git.Run(gitDir, "config", "--get", "extensions.relativeWorktrees");
+        if (extExit != 0 || !extOutput.Trim().Equals("true", StringComparison.OrdinalIgnoreCase))
             Git.Run(gitDir, "config", "extensions.relativeWorktrees", "true");
-        if (!_relPathWasEnabled)
-            Git.Run(gitDir, "config", "worktree.useRelativePaths", "true");
-    }
-
-    public void Dispose()
-    {
-        if (!_relExtWasEnabled)
-            Git.Run(_gitDir, "config", "--unset", "extensions.relativeWorktrees");
-        if (!_relPathWasEnabled)
-            Git.Run(_gitDir, "config", "--unset", "worktree.useRelativePaths");
-
-        if (_previousRepoVersion != "1")
-        {
-            if (_previousRepoVersion is not null)
-                Git.Run(_gitDir, "config", "core.repositoryformatversion", _previousRepoVersion);
-            else
-                Git.Run(_gitDir, "config", "--unset", "core.repositoryformatversion");
-        }
     }
 }

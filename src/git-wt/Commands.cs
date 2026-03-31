@@ -34,34 +34,33 @@ static class Commands
         var localBranchExists = Git.Run(bareRepoPath, "rev-parse", "--verify", $"refs/heads/{branchName}").ExitCode == 0;
         var remoteBranchExists = Git.Run(bareRepoPath, "rev-parse", "--verify", $"refs/remotes/origin/{branchName}").ExitCode == 0;
 
-        int exitCode;
-        using (new RelativeWorktreeScope(bareRepoPath))
-        {
-            if (localBranchExists)
-            {
-                Console.WriteLine($"Using existing branch '{branchName}'...");
-                exitCode = Git.RunLive(bareRepoPath, "worktree", "add", worktreePath, branchName);
+        RelativeWorktrees.EnsureEnabled(bareRepoPath);
 
-                if (exitCode == 0 && remoteBranchExists)
-                    Git.Run(bareRepoPath, "branch", $"--set-upstream-to=origin/{branchName}", branchName);
-            }
-            else if (remoteBranchExists)
+        int exitCode;
+        if (localBranchExists)
+        {
+            Console.WriteLine($"Using existing branch '{branchName}'...");
+            exitCode = Git.RunLive(bareRepoPath, "worktree", "add", worktreePath, branchName);
+
+            if (exitCode == 0 && remoteBranchExists)
+                Git.Run(bareRepoPath, "branch", $"--set-upstream-to=origin/{branchName}", branchName);
+        }
+        else if (remoteBranchExists)
+        {
+            Console.WriteLine($"Tracking remote branch 'origin/{branchName}'...");
+            exitCode = Git.RunLive(bareRepoPath, "worktree", "add", "--track", "-b", branchName, worktreePath, $"origin/{branchName}");
+        }
+        else
+        {
+            var baseBranch = Git.GetDefaultBranch(bareRepoPath);
+            if (baseBranch is null)
             {
-                Console.WriteLine($"Tracking remote branch 'origin/{branchName}'...");
-                exitCode = Git.RunLive(bareRepoPath, "worktree", "add", "--track", "-b", branchName, worktreePath, $"origin/{branchName}");
+                Console.Error.WriteLine("Error: Could not determine default branch.");
+                Console.Error.WriteLine("Set origin/HEAD with: git remote set-head origin --auto");
+                return 1;
             }
-            else
-            {
-                var baseBranch = Git.GetDefaultBranch(bareRepoPath);
-                if (baseBranch is null)
-                {
-                    Console.Error.WriteLine("Error: Could not determine default branch.");
-                    Console.Error.WriteLine("Set origin/HEAD with: git remote set-head origin --auto");
-                    return 1;
-                }
-                Console.WriteLine($"Creating new branch '{branchName}' from '{baseBranch}'...");
-                exitCode = Git.RunLive(bareRepoPath, "worktree", "add", "--no-track", "-b", branchName, worktreePath, baseBranch);
-            }
+            Console.WriteLine($"Creating new branch '{branchName}' from '{baseBranch}'...");
+            exitCode = Git.RunLive(bareRepoPath, "worktree", "add", "--no-track", "-b", branchName, worktreePath, baseBranch);
         }
 
         if (exitCode == 0)
@@ -102,6 +101,7 @@ static class Commands
 
         // Bare clones only fetch the default branch. Fix the refspec so all branches are visible.
         Git.Run(bareDir, "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*");
+        RelativeWorktrees.EnsureEnabled(bareDir);
 
         Console.WriteLine("Fetching all branches...");
         if (Git.RunLive(bareDir, "fetch", "--progress", "origin") != 0)
@@ -125,11 +125,15 @@ static class Commands
 
         int wtExit;
         var localBranchExists = Git.Run(bareDir, "rev-parse", "--verify", $"refs/heads/{defaultBranch}").ExitCode == 0;
-        using (new RelativeWorktreeScope(bareDir))
+        if (localBranchExists)
         {
-            wtExit = localBranchExists
-                ? Git.RunLive(bareDir, "worktree", "add", worktreePath, defaultBranch)
-                : Git.RunLive(bareDir, "worktree", "add", "--track", "-b", defaultBranch, worktreePath, $"origin/{defaultBranch}");
+            wtExit = Git.RunLive(bareDir, "worktree", "add", worktreePath, defaultBranch);
+            if (wtExit == 0)
+                Git.Run(bareDir, "branch", $"--set-upstream-to=origin/{defaultBranch}", defaultBranch);
+        }
+        else
+        {
+            wtExit = Git.RunLive(bareDir, "worktree", "add", "--track", "-b", defaultBranch, worktreePath, $"origin/{defaultBranch}");
         }
 
         if (wtExit != 0)
