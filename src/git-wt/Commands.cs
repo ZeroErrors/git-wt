@@ -207,6 +207,47 @@ static class Commands
     }
 
     /// <summary>
+    /// Removes a specific worktree and its local branch.
+    /// </summary>
+    public static int Remove(string branchName)
+    {
+        if (!TryFindBareRepo(out var bareRepoPath, out var repoRoot))
+            return 1;
+
+        var (wtExit, wtOutput, _) = Git.Run(bareRepoPath, "worktree", "list", "--porcelain");
+        if (wtExit != 0)
+        {
+            Console.Error.WriteLine("Error: Failed to list worktrees.");
+            return 1;
+        }
+
+        var worktrees = Parsing.ParseWorktreeList(wtOutput);
+        var match = worktrees.FirstOrDefault(wt => !wt.IsBare && wt.Branch == branchName);
+        if (match is null)
+        {
+            Console.Error.WriteLine($"Error: No worktree found for branch '{branchName}'.");
+            return 1;
+        }
+
+        Console.WriteLine($"Removing worktree '{branchName}'...");
+        if (Git.RunLive(bareRepoPath, "worktree", "remove", match.Path) != 0)
+        {
+            Console.Error.WriteLine("Error: Failed to remove worktree. It may have dirty or untracked changes.");
+            Console.Error.WriteLine("Use 'git worktree remove --force' to remove it anyway.");
+            return 1;
+        }
+
+        var (delExit, _, _) = Git.Run(bareRepoPath, "branch", "-d", branchName);
+        if (delExit != 0)
+            Console.Error.WriteLine($"Warning: Could not delete branch '{branchName}'. Remove manually with: git branch -D {branchName}");
+
+        RemoveEmptyParentDirectories(match.Path, repoRoot);
+
+        Console.WriteLine($"Removed worktree and branch '{branchName}'.");
+        return 0;
+    }
+
+    /// <summary>
     /// Removes worktrees whose upstream branch has been deleted (gone),
     /// then cleans up empty parent directories.
     /// </summary>

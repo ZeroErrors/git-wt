@@ -16,6 +16,11 @@ var pruneOption = new Option<bool>("--prune", "-p")
     Description = "Remove worktrees whose upstream branch is gone and delete empty parent directories"
 };
 
+var removeOption = new Option<string>("--remove", "-r")
+{
+    Description = "Remove a worktree and its local branch"
+};
+
 var setupOption = new Option<string>("--setup", "-s")
 {
     Description = "Clone a repository into a bare worktree layout: <name>/.bare + default branch worktree"
@@ -26,6 +31,7 @@ var rootCommand = new RootCommand("Creates a worktree for the given branch, auto
     branchArg,
     listOption,
     pruneOption,
+    removeOption,
     setupOption
 };
 
@@ -40,6 +46,10 @@ rootCommand.SetAction(parseResult =>
 
     if (parseResult.GetValue(pruneOption))
         return Commands.Prune();
+
+    var removeBranch = parseResult.GetValue(removeOption);
+    if (!string.IsNullOrEmpty(removeBranch))
+        return Commands.Remove(removeBranch);
 
     var branchName = parseResult.GetValue(branchArg);
     if (string.IsNullOrEmpty(branchName))
