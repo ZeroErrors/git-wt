@@ -104,7 +104,7 @@ static class Parsing
     }
 
     /// <summary>
-    /// Recursively prints a worktree tree using box-drawing characters.
+    /// Recursively prints a worktree tree using box-drawing characters with color.
     /// </summary>
     public static void PrintTree(TreeNode node, string prefix)
     {
@@ -114,24 +114,41 @@ static class Parsing
             var (name, child) = entries[i];
             var isLast = i == entries.Count - 1;
 
-            var connector = isLast ? "└── " : "├── ";
-            var label = name;
-
-            if (child.Info is not null)
-            {
-                if (child.Info.IsDetached)
-                    label += " (detached)";
-                else if (child.Info.IsGone)
-                    label += " [gone]";
-                else if (child.Info.Upstream is null)
-                    label += " (no upstream)";
-            }
+            var connector = Output.Dim(isLast ? "└── " : "├── ");
 
             Console.Write(prefix);
             Console.Write(connector);
-            Console.WriteLine(label);
 
-            var extension = isLast ? "    " : "│   ";
+            if (child.Info is not null)
+            {
+                if (child.Info.IsGone)
+                {
+                    Console.Write(Output.Red("\u2717 "));
+                    Console.Write(name);
+                    Console.WriteLine(Output.Red(" [gone]"));
+                }
+                else if (child.Info.IsDetached)
+                {
+                    Console.Write(Output.Dim("\u25cb "));
+                    Console.Write(name);
+                    Console.WriteLine(Output.Dim(" (detached)"));
+                }
+                else
+                {
+                    Console.Write(Output.Green("\u2713 "));
+                    Console.Write(name);
+                    if (child.Info.Upstream is not null)
+                        Console.WriteLine(Output.Dim($" \u2192 {child.Info.Upstream}"));
+                    else
+                        Console.WriteLine(Output.Dim(" (no upstream)"));
+                }
+            }
+            else
+            {
+                Console.WriteLine(name);
+            }
+
+            var extension = Output.Dim(isLast ? "    " : "│   ");
             PrintTree(child, prefix + extension);
         }
     }

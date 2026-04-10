@@ -26,17 +26,31 @@ var setupOption = new Option<string>("--setup", "-s")
     Description = "Clone a repository into a bare worktree layout: <name>/.bare + default branch worktree"
 };
 
+var colorOption = new Option<bool>("--color")
+{
+    Description = "Force colored output even when piped"
+};
+
+var noColorOption = new Option<bool>("--no-color")
+{
+    Description = "Disable colored output"
+};
+
 var rootCommand = new RootCommand("Creates a worktree for the given branch, automatically tracking an existing remote branch or creating a new local branch.")
 {
     branchArg,
     listOption,
     pruneOption,
     removeOption,
-    setupOption
+    setupOption,
+    colorOption,
+    noColorOption
 };
 
 rootCommand.SetAction(parseResult =>
 {
+    Output.Init(parseResult.GetValue(colorOption), parseResult.GetValue(noColorOption));
+
     var setupUrl = parseResult.GetValue(setupOption);
     if (!string.IsNullOrEmpty(setupUrl))
         return Commands.Setup(setupUrl);

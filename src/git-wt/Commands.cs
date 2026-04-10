@@ -149,6 +149,7 @@ static class Commands
 
     /// <summary>
     /// Lists all worktrees as a hierarchical tree with branch and upstream status.
+    /// When output is plain (piped/redirected), prints one branch name per line.
     /// </summary>
     public static int List()
     {
@@ -197,6 +198,13 @@ static class Commands
         if (branches.Count == 0)
         {
             Console.WriteLine("No worktrees found.");
+            return 0;
+        }
+
+        if (Output.IsPlain)
+        {
+            foreach (var branch in branches)
+                Console.WriteLine(branch.Name);
             return 0;
         }
 
