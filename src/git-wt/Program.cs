@@ -26,6 +26,11 @@ var setupOption = new Option<string>("--setup", "-s")
     Description = "Clone a repository into a bare worktree layout: <name>/.bare + default branch worktree"
 };
 
+var forceOption = new Option<bool>("--force", "-f")
+{
+    Description = "Force remove worktrees with dirty/untracked changes and force delete local branches (use with --prune or --remove)"
+};
+
 var colorOption = new Option<bool>("--color")
 {
     Description = "Force colored output even when piped"
@@ -43,6 +48,7 @@ var rootCommand = new RootCommand("Creates a worktree for the given branch, auto
     pruneOption,
     removeOption,
     setupOption,
+    forceOption,
     colorOption,
     noColorOption
 };
@@ -58,12 +64,14 @@ rootCommand.SetAction(parseResult =>
     if (parseResult.GetValue(listOption))
         return Commands.List();
 
+    var force = parseResult.GetValue(forceOption);
+
     if (parseResult.GetValue(pruneOption))
-        return Commands.Prune();
+        return Commands.Prune(force);
 
     var removeBranch = parseResult.GetValue(removeOption);
     if (!string.IsNullOrEmpty(removeBranch))
-        return Commands.Remove(removeBranch);
+        return Commands.Remove(removeBranch, force);
 
     var branchName = parseResult.GetValue(branchArg);
     if (string.IsNullOrEmpty(branchName))

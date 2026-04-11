@@ -217,7 +217,7 @@ static class Commands
     /// <summary>
     /// Removes a specific worktree and its local branch.
     /// </summary>
-    public static int Remove(string branchName)
+    public static int Remove(string branchName, bool force = false)
     {
         if (!TryFindBareRepo(out var bareRepoPath, out var repoRoot))
             return 1;
@@ -238,14 +238,20 @@ static class Commands
         }
 
         Console.WriteLine($"Removing worktree '{branchName}'...");
-        if (Git.RunLive(bareRepoPath, "worktree", "remove", match.Path) != 0)
+        var removeArgs = force
+            ? new[] { "worktree", "remove", "--force", match.Path }
+            : new[] { "worktree", "remove", match.Path };
+        if (Git.RunLive(bareRepoPath, removeArgs) != 0)
         {
             Console.Error.WriteLine("Error: Failed to remove worktree. It may have dirty or untracked changes.");
-            Console.Error.WriteLine("Use 'git worktree remove --force' to remove it anyway.");
+            Console.Error.WriteLine("Use --force to remove it anyway.");
             return 1;
         }
 
-        var (delExit, _, _) = Git.Run(bareRepoPath, "branch", "-d", branchName);
+        var deleteArgs = force
+            ? new[] { "branch", "--delete", "--force", branchName }
+            : new[] { "branch", "--delete", branchName };
+        var (delExit, _, _) = Git.Run(bareRepoPath, deleteArgs);
         if (delExit != 0)
             Console.Error.WriteLine($"Warning: Could not delete branch '{branchName}'. Remove manually with: git branch -D {branchName}");
 
@@ -259,7 +265,7 @@ static class Commands
     /// Removes worktrees whose upstream branch has been deleted (gone),
     /// then cleans up empty parent directories.
     /// </summary>
-    public static int Prune()
+    public static int Prune(bool force = false)
     {
         if (!TryFindBareRepo(out var bareRepoPath, out var repoRoot))
             return 1;
@@ -304,14 +310,20 @@ static class Commands
         foreach (var (wtPath, branch) in goneBranches)
         {
             Console.WriteLine($"Removing worktree '{branch}'...");
-            if (Git.RunLive(bareRepoPath, "worktree", "remove", wtPath) != 0)
+            var removeArgs = force
+                ? new[] { "worktree", "remove", "--force", wtPath }
+                : new[] { "worktree", "remove", wtPath };
+            if (Git.RunLive(bareRepoPath, removeArgs) != 0)
             {
-                Console.Error.WriteLine($"  Skipped: worktree has dirty or untracked changes.");
+                Console.Error.WriteLine($"  Skipped: could not remove worktree.");
                 failed++;
                 continue;
             }
 
-            var (delExit, _, _) = Git.Run(bareRepoPath, "branch", "-d", branch);
+            var deleteArgs = force
+                ? new[] { "branch", "--delete", "--force", branch }
+                : new[] { "branch", "--delete", branch };
+            var (delExit, _, _) = Git.Run(bareRepoPath, deleteArgs);
             if (delExit != 0)
                 Console.Error.WriteLine($"  Warning: Could not delete branch '{branch}'. Remove manually with: git branch -D {branch}");
 
@@ -319,7 +331,7 @@ static class Commands
         }
 
         var removed = goneBranches.Count - failed;
-        Console.WriteLine($"Pruned {removed} worktree{(removed == 1 ? "" : "s")}{(failed > 0 ? $", {failed} skipped (dirty)" : "")}.");
+        Console.WriteLine($"Pruned {removed} worktree{(removed == 1 ? "" : "s")}{(failed > 0 ? $", {failed} skipped" : "")}.");
         return 0;
     }
 
