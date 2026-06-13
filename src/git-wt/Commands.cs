@@ -185,8 +185,11 @@ static class Commands
 
             if (wt.IsDetached)
             {
-                var dirName = Path.GetRelativePath(repoRoot, wt.Path).Replace('\\', '/');
-                branches.Add(new BranchInfo(dirName, null, false, true));
+                var isExternal = IsOutsideRepo(repoRoot, wt.Path);
+                var dirName = isExternal
+                    ? AbbreviateHome(wt.Path)
+                    : Path.GetRelativePath(repoRoot, wt.Path).Replace('\\', '/');
+                branches.Add(new BranchInfo(dirName, null, false, true, isExternal));
             }
             else if (wt.Branch is not null)
             {
@@ -209,7 +212,7 @@ static class Commands
         }
 
         var root = Parsing.BuildTree(branches);
-        Console.WriteLine(repoRoot.Replace('\\', '/'));
+        Console.WriteLine(AbbreviateHome(repoRoot));
         Parsing.PrintTree(root, "");
         return 0;
     }
@@ -336,6 +339,39 @@ static class Commands
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns true when <paramref name="path"/> is not contained within <paramref name="repoRoot"/>,
+    /// i.e. the relative path escapes upward or sits on a different volume.
+    /// </summary>
+    internal static bool IsOutsideRepo(string repoRoot, string path)
+    {
+        var relative = Path.GetRelativePath(repoRoot, path);
+        return Path.IsPathRooted(relative)
+            || relative == ".."
+            || relative.StartsWith("../", StringComparison.Ordinal)
+            || relative.StartsWith(@"..\", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Returns <paramref name="path"/> with the user's home directory replaced by <c>~</c>
+    /// and backslashes normalized to forward slashes. Paths outside home are returned as-is.
+    /// </summary>
+    internal static string AbbreviateHome(string path, string? home = null)
+    {
+        var normalized = path.Replace('\\', '/');
+        home ??= Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (string.IsNullOrEmpty(home))
+            return normalized;
+
+        var normalizedHome = home.Replace('\\', '/').TrimEnd('/');
+        if (normalized == normalizedHome)
+            return "~";
+        if (normalized.StartsWith(normalizedHome + "/", StringComparison.Ordinal))
+            return "~" + normalized[normalizedHome.Length..];
+
+        return normalized;
+    }
 
     /// <summary>
     /// Locates the <c>.bare</c> directory by walking up from the current directory.

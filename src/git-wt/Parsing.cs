@@ -84,7 +84,9 @@ static class Parsing
         var root = new TreeNode();
         foreach (var branch in branches)
         {
-            var segments = branch.Name.Split('/');
+            // External worktrees live outside the repo root, so their absolute path
+            // is shown as a single leaf rather than split into directory levels.
+            var segments = branch.IsExternal ? new[] { branch.Name } : branch.Name.Split('/');
             var current = root;
             for (int i = 0; i < segments.Length; i++)
             {
@@ -163,9 +165,10 @@ record WorktreeEntry(string Path, string? Branch, bool IsDetached, bool IsBare);
 
 /// <summary>
 /// Display info for a worktree branch. <see cref="Name"/> is the branch name,
-/// or a relative directory path for detached worktrees.
+/// or a directory path for detached worktrees. <see cref="IsExternal"/> marks a
+/// worktree located outside the repo root, whose <see cref="Name"/> is an absolute path.
 /// </summary>
-record BranchInfo(string Name, string? Upstream, bool IsGone, bool IsDetached);
+record BranchInfo(string Name, string? Upstream, bool IsGone, bool IsDetached, bool IsExternal = false);
 
 /// <summary>
 /// Upstream tracking state for a local branch.

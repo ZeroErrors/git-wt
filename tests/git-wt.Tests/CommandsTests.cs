@@ -25,4 +25,25 @@ public class CommandsTests
     {
         Assert.Null(Commands.DeriveRepoName(url));
     }
+
+    [Theory]
+    [InlineData("/repo", "/repo/main", false)]
+    [InlineData("/repo", "/repo/feat/auth", false)]
+    [InlineData("/repo", "/repo", false)]
+    [InlineData("/repo", "/private/tmp/ht-stage", true)]
+    [InlineData("/repo/nested", "/repo/other", true)]
+    public void IsOutsideRepo_DetectsEscapingPaths(string repoRoot, string path, bool expected)
+    {
+        Assert.Equal(expected, Commands.IsOutsideRepo(repoRoot, path));
+    }
+
+    [Theory]
+    [InlineData("/home/user/repos/proj", "/home/user", "~/repos/proj")]
+    [InlineData("/home/user", "/home/user", "~")]
+    [InlineData("/private/tmp/ht-stage", "/home/user", "/private/tmp/ht-stage")]
+    [InlineData("/home/username/x", "/home/user", "/home/username/x")]
+    public void AbbreviateHome_ReplacesHomePrefix(string path, string home, string expected)
+    {
+        Assert.Equal(expected, Commands.AbbreviateHome(path, home));
+    }
 }

@@ -70,6 +70,8 @@ D:/github/my-project
 
 Annotations: `[gone]` (upstream deleted), `(no upstream)` (no tracking configured), `(detached)` (detached HEAD). Normal tracking is silent.
 
+The repo root and any worktree living outside it are shown with their absolute path, with your home directory abbreviated to `~`. Worktrees outside the repo root appear as a single leaf rather than a chain of `..` segments.
+
 ### Prune gone worktrees
 
 ```

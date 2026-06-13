@@ -120,4 +120,16 @@ public class ParsingTests
 
         Assert.Equal(info, root.Children["feat"].Children["thing"].Info);
     }
+
+    [Fact]
+    public void BuildTree_KeepsExternalPathAsSingleLeaf()
+    {
+        var info = new BranchInfo("/private/tmp/ht-stage-prerelease", null, false, true, IsExternal: true);
+        var branches = new List<BranchInfo> { info };
+
+        var root = Parsing.BuildTree(branches);
+
+        Assert.Single(root.Children);
+        Assert.Equal(info, root.Children["/private/tmp/ht-stage-prerelease"].Info);
+    }
 }
